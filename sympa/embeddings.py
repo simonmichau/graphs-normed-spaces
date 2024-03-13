@@ -2,7 +2,7 @@ import abc
 import torch
 import torch.nn as nn
 import geoopt as gt
-from sympa.manifolds import Euclidean, EuclideanlMetricType, UpperHalf, BoundedDomain, ProductManifold
+from sympa.manifolds import Euclidean, EuclideanlMetricType, UpperHalf, BoundedDomain, ProductManifold, PesudoManifold
 from geoopt.manifolds.siegel.vvd_metrics import SiegelMetricType
 
 class Embeddings(nn.Module, abc.ABC):
@@ -34,7 +34,7 @@ class Embeddings(nn.Module, abc.ABC):
         if model_name in {"upper", "bounded", "dual", "spd"}:
             return MatrixEmbeddings
         if model_name in {"euclidean", "poincare", "lorentz", "sphere", "prod-hysph", "prod-hyhy", "prod-hyeu", "prod-eueu",
-                          "prod-sphsph"}:
+                          "prod-sphsph", "pesudo-eueu"}:
             return VectorEmbeddings
         raise ValueError(f"Unrecognized embedding model: {model_name}")
 
@@ -85,6 +85,14 @@ def get_prod_eueu_manifold(dims, metric):
 
     return ProductManifold((euclidean1, dims // 2), (euclidean2, dims // 2))
 
+def get_pesudo_eueu_manifold(dims, metric):
+
+    metrics = metric.split(',')
+    euclidean1 = Euclidean(metric=EuclideanlMetricType(metrics[0]))
+    euclidean2 = Euclidean(metric=EuclideanlMetricType(metrics[1]))
+
+    return PesudoManifold((euclidean1, dims // 2), (euclidean2, dims // 2))
+
 class ManifoldBuilder:
 
     manifolds = {
@@ -102,6 +110,7 @@ class ManifoldBuilder:
         "bounded": lambda dims, metric: BoundedDomain(metric=metric),
         "prod-hyeu": lambda dims, metric: get_prod_hyeu_manifold(dims=dims, metric=metric),
         "prod-eueu": lambda dims, metric: get_prod_eueu_manifold(dims=dims, metric=metric),
+        "pesudo-eueu": lambda dims, metric: get_pesudo_eueu_manifold(dims=dims, metric=metric),
     }
 
     @classmethod

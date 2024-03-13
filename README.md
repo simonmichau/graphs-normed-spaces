@@ -3,7 +3,7 @@ Implementation for `Normed Spaces for Graph Embeddings`
 ## Available Spaces
 
 - `Euclidean-l1`, `Euclidean-l2`, `Euclidean-linf`
-- `Poincare`, `Lorentz`, `Sphere`
+- `Poincare`, `Lorentz`, `Sphere`, `Pseudo-Euclidean`
 - `Poincare x Euclidean-l1`, `Poincare x Euclidean-l2`, `Poincare x Euclidean-linf`, `Euclidean-l1 x Euclidean-linf`
 - `Upper-riem`, `Upper-f1`, `Upper-finf`, `Bounded-riem`, `Bounded-f1`, `Bounded-finf`
 - `SPD`
@@ -13,11 +13,13 @@ Implementation for `Normed Spaces for Graph Embeddings`
 Below are the instructions about running experiments in the l1 and linf normed spaces.
 
 #### Graph Reconstruction
-``python run_dis.py --model euclidean --metric l1 --dims 20 --learning_rate 0.001 --batch_size 2048 --epoch 3000 --graph grid``
+``python run_dis.py --model euclidean --metric l1 --dims 20 --learning_rate 0.01 --batch_size 2048 --epoch 3000 --graph grid``
 
 ``python run_dis.py --model euclidean --metric linf --dims 20 --learning_rate 0.01 --batch_size 2048 --epoch 3000 --graph tree``
 
 ``python run_dis.py --model prod-eueu --metric l1,linf --dims 20 --learning_rate 0.01 --batch_size 2048 --epoch 3000 --graph tree``
+
+``python run_dis.py --model pesudo-eueu --metric l2,l2 --dims 20 --learning_rate 0.01 --batch_size 2048 --epoch 3000 --graph grid``
 
 #### Link Prediction on GNNs
 ``python run_lp_gnn.py --dims 64 --graph cora --model euclidean --metric l1 --gnn gcn --learning_rate 0.01 --batch_size -1 --epoch 1000``
