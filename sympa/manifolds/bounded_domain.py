@@ -31,14 +31,10 @@ class BoundedDomain(SiegelManifold):
 
     name = "Bounded Domain"
 
-    def __init__(
-        self, metric: SiegelMetricType = SiegelMetricType.RIEMANNIAN, rank: int = None
-    ):
+    def __init__(self, metric: SiegelMetricType = SiegelMetricType.RIEMANNIAN, rank: int = None):
         super().__init__(metric=metric, rank=rank)
 
-    def dist(
-        self, z1: torch.Tensor, z2: torch.Tensor, *, keepdim=False
-    ) -> torch.Tensor:
+    def dist(self, z1: torch.Tensor, z2: torch.Tensor, *, keepdim=False) -> torch.Tensor:
         """
         Compute distance in the Bounded domain model.
 
@@ -128,9 +124,7 @@ class BoundedDomain(SiegelManifold):
         already_in_space_mask = batch_wise_mask.unsqueeze(-1).expand_as(z)
         return torch.where(already_in_space_mask, z, z_tilde)
 
-    def inner(
-        self, z: torch.Tensor, u: torch.Tensor, v=None, *, keepdim=False
-    ) -> torch.Tensor:
+    def inner(self, z: torch.Tensor, u: torch.Tensor, v=None, *, keepdim=False) -> torch.Tensor:
         r"""
         Inner product for tangent vectors at point :math:`Z`.
 
@@ -165,7 +159,7 @@ class BoundedDomain(SiegelManifold):
         inv_id_minus_z_conjz = sm.inverse(identity - (z @ conj_z))
 
         ret = lalg.trace(inv_id_minus_conjz_z @ u @ inv_id_minus_z_conjz @ v.conj())
-        
+
         # fixes by Wei
         if keepdim:
             return torch.unsqueeze(torch.unsqueeze(ret, -1), -1)
@@ -185,11 +179,11 @@ class BoundedDomain(SiegelManifold):
         return sm.inverse_cayley_transform(points)
 
     def origin(
-        self,
-        *size: Union[int, Tuple[int]],
-        dtype=None,
-        device=None,
-        seed: Optional[int] = 42,
+            self,
+            *size: Union[int, Tuple[int]],
+            dtype=None,
+            device=None,
+            seed: Optional[int] = 42,
     ) -> torch.Tensor:
         """
         Create points at the origin of the manifold in a deterministic way.

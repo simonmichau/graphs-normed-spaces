@@ -1,13 +1,11 @@
 import torch
 import geoopt
-    
 import torch.nn
 from typing import Tuple, Union, Optional
 import operator
 import functools
-#from geoopt.utils import size2shape
-from geoopt import Manifold 
-
+# from geoopt.utils import size2shape
+from geoopt import Manifold
 
 __all__ = ["PesudoManifold"]
 
@@ -35,10 +33,7 @@ class PesudoManifold(Manifold):
 
     ndim = 1
 
-    def __init__(
-        self,
-        *manifolds_with_shape: Tuple[Manifold, Union[Tuple[int, ...], int]],
-    ):
+    def __init__(self, *manifolds_with_shape: Tuple[Manifold, Union[Tuple[int, ...], int]],):
         if len(manifolds_with_shape) < 1:
             raise ValueError(
                 "There should be at least one manifold in a product manifold"
@@ -85,9 +80,7 @@ class PesudoManifold(Manifold):
     def reversible(self) -> bool:
         return all(m.reversible for m in self.manifolds)
 
-    def take_submanifold_value(
-        self, x: torch.Tensor, i: int, reshape=True
-    ) -> torch.Tensor:
+    def take_submanifold_value(self, x: torch.Tensor, i: int, reshape=True) -> torch.Tensor:
         """
         Take i'th slice of the ambient tensor and possibly reshape.
 
@@ -121,9 +114,7 @@ class PesudoManifold(Manifold):
             )
         return ok, None
 
-    def _check_point_on_manifold(
-        self, x: torch.Tensor, *, atol=1e-5, rtol=1e-5
-    ) -> Tuple[bool, Optional[str]]:
+    def _check_point_on_manifold(self, x: torch.Tensor, *, atol=1e-5, rtol=1e-5) -> Tuple[bool, Optional[str]]:
         ok, reason = True, None
         for i, manifold in enumerate(self.manifolds):
             point = self.take_submanifold_value(x, i)
@@ -134,9 +125,7 @@ class PesudoManifold(Manifold):
                 break
         return ok, reason
 
-    def _check_vector_on_tangent(
-        self, x, u, *, atol=1e-5, rtol=1e-5
-    ) -> Tuple[bool, Optional[str]]:
+    def _check_vector_on_tangent(self, x, u, *, atol=1e-5, rtol=1e-5) -> Tuple[bool, Optional[str]]:
         ok, reason = True, None
         for i, manifold in enumerate(self.manifolds):
             point = self.take_submanifold_value(x, i)
@@ -148,9 +137,7 @@ class PesudoManifold(Manifold):
                 break
         return ok, reason
 
-    def inner(
-        self, x: torch.Tensor, u: torch.Tensor, v=None, *, keepdim=False
-    ) -> torch.Tensor:
+    def inner(self, x: torch.Tensor, u: torch.Tensor, v=None, *, keepdim=False) -> torch.Tensor:
         if v is not None:
             target_batch_dim = _calculate_target_batch_dim(x.dim(), u.dim(), v.dim())
         else:
@@ -254,9 +241,7 @@ class PesudoManifold(Manifold):
             logmapped_tensors.append(logmapped)
         return torch.cat(logmapped_tensors, -1)
 
-    def transp_follow_retr(
-        self, x: torch.Tensor, u: torch.Tensor, v: torch.Tensor
-    ) -> torch.Tensor:
+    def transp_follow_retr(self, x: torch.Tensor, u: torch.Tensor, v: torch.Tensor) -> torch.Tensor:
         target_batch_dim = _calculate_target_batch_dim(x.dim(), u.dim(), v.dim())
         results = []
         for i, manifold in enumerate(self.manifolds):
@@ -278,9 +263,7 @@ class PesudoManifold(Manifold):
             logmapped_tensors.append(logmapped)
         return torch.cat(logmapped_tensors, -1)
 
-    def transp_follow_expmap(
-        self, x: torch.Tensor, u: torch.Tensor, v: torch.Tensor
-    ) -> torch.Tensor:
+    def transp_follow_expmap(self, x: torch.Tensor, u: torch.Tensor, v: torch.Tensor) -> torch.Tensor:
         target_batch_dim = _calculate_target_batch_dim(x.dim(), u.dim(), v.dim())
         results = []
         for i, manifold in enumerate(self.manifolds):
@@ -294,9 +277,7 @@ class PesudoManifold(Manifold):
             results.append(transported)
         return torch.cat(results, -1)
 
-    def expmap_transp(
-        self, x: torch.Tensor, u: torch.Tensor, v: torch.Tensor
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    def expmap_transp(self, x: torch.Tensor, u: torch.Tensor, v: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
         target_batch_dim = _calculate_target_batch_dim(x.dim(), u.dim(), v.dim())
         results = []
         for i, manifold in enumerate(self.manifolds):
@@ -332,7 +313,7 @@ class PesudoManifold(Manifold):
         target_batch_dim = _calculate_target_batch_dim(x.dim(), y.dim())
         mini_dists2 = []
         for i, manifold in enumerate(self.manifolds):
-            if i == 0: 
+            if i == 0:
                 sign = 1
             else:
                 sign = -1
@@ -381,10 +362,10 @@ class PesudoManifold(Manifold):
             part = tensors[i]
             shape = self.shapes[i]
             if len(shape) > 0:
-                if part.shape[-len(shape) :] != shape:
+                if part.shape[-len(shape):] != shape:
                     raise ValueError(
                         "last shape dimension does not seem to be valid. {} required, but got {}".format(
-                            part.shape[-len(shape) :], shape
+                            part.shape[-len(shape):], shape
                         )
                     )
                 new_shape = (*part.shape[: -len(shape)], -1)
@@ -420,9 +401,7 @@ class PesudoManifold(Manifold):
             init.append((manifold, tens.shape[batch_dims:]))
         return cls(*init)
 
-    def random_combined(
-        self, *size, dtype=None, device=None
-    ) -> "geoopt.ManifoldTensor":
+    def random_combined(self, *size, dtype=None, device=None) -> "geoopt.ManifoldTensor":
         shape = geoopt.utils.size2shape(*size)
         self._assert_check_shape(shape, "x")
         batch_shape = shape[:-1]
@@ -436,9 +415,7 @@ class PesudoManifold(Manifold):
 
     random = random_combined
 
-    def origin(
-        self, *size, dtype=None, device=None, seed=42
-    ) -> "geoopt.ManifoldTensor":
+    def origin(self, *size, dtype=None, device=None, seed=42) -> "geoopt.ManifoldTensor":
         shape = geoopt.utils.size2shape(*size)
         self._assert_check_shape(shape, "x")
         batch_shape = shape[:-1]

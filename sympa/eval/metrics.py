@@ -16,15 +16,14 @@ class AverageDistortionMetric:
         :param manifold_distances: distances in the manifold (b, 1)
         :return: average_distortion: tensor of (1)
         """
-#        distortion = torch.div(torch.abs(torch.sub(manifold_distances, graph_distances)), graph_distances)
-        
+        # distortion = torch.div(torch.abs(torch.sub(manifold_distances, graph_distances)), graph_distances)
+
         if graph_distances.is_cuda:
-            
             manifold_distances = manifold_distances.cpu().numpy().reshape(-1)
             graph_distances = graph_distances.cpu().numpy().reshape(-1)
 
         distortion = abs(manifold_distances - graph_distances) / graph_distances
-        
+
         return distortion
 
 

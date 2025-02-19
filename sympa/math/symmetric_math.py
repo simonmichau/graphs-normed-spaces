@@ -12,6 +12,7 @@ from geoopt.linalg.batch_linalg import sym as squared_to_symmetric
 
 EPS = {torch.float32: 4e-3, torch.float64: 1e-5}
 
+
 def real(z: torch.Tensor):
     """
     Returns the real part of z
@@ -147,7 +148,7 @@ def is_complex_symmetric(x: torch.Tensor, atol=1e-05, rtol=1e-5):
     """
     real_x, imag_x = real(x), imag(x)
     return torch.allclose(real_x, real_x.transpose(-1, -2), atol=atol, rtol=rtol) and \
-           torch.allclose(imag_x, imag_x.transpose(-1, -2), atol=atol, rtol=rtol)
+        torch.allclose(imag_x, imag_x.transpose(-1, -2), atol=atol, rtol=rtol)
 
 
 def multiply_by_i(z: torch.Tensor):
@@ -227,7 +228,7 @@ def positive_conjugate_projection(y: torch.Tensor):
 
     # we do this so no operation is applied on the matrices that already belong to the space.
     # This prevents modifying values due to numerical instabilities/floating point ops
-    batch_wise_mask = torch.all(eigenvalues > EPS[y.dtype], dim=-1, keepdim=True)    # True means it must not be projected
+    batch_wise_mask = torch.all(eigenvalues > EPS[y.dtype], dim=-1, keepdim=True)  # True means it must not be projected
     mask = batch_wise_mask.unsqueeze(-1).expand_as(y)
 
     return torch.where(mask, y, y_tilde), batch_wise_mask
@@ -244,7 +245,7 @@ def symeig(y: torch.Tensor):
     :return: eigenvalues (in ascending order): b x * x n
     :return: eigenvectors: b x * x n x n
     """
-#    eigenvalues, eigenvectors = torch.symeig(y, eigenvectors=True)                  # evalues are in ascending order
+    #    eigenvalues, eigenvectors = torch.symeig(y, eigenvectors=True)                  # evalues are in ascending order
     eigenvalues, eigenvectors = torch.linalg.eigh(y, "U")
     return eigenvalues, eigenvectors
 
@@ -299,7 +300,7 @@ def to_hermitian(x: torch.Tensor):
 
     # imaginary diagonal must be zero and imaginary elements in the upper triangular part of the matrix must
     # be of opposite sign than the elements in the lower triangular part
-    upper_triangular = torch.triu(imag_x, diagonal=1)       # this already zeros the diagonal
+    upper_triangular = torch.triu(imag_x, diagonal=1)  # this already zeros the diagonal
     lower_triangular = upper_triangular.transpose(-2, -1) * -1
     new_imag_x = lower_triangular + upper_triangular
     return stick(real_x, new_imag_x)

@@ -31,9 +31,7 @@ class UpperHalf(SiegelManifold):
 
     name = "Upper Half Space"
 
-    def __init__(
-        self, metric: SiegelMetricType = SiegelMetricType.RIEMANNIAN, rank: int = None
-    ):
+    def __init__(self, metric: SiegelMetricType = SiegelMetricType.RIEMANNIAN, rank: int = None):
         super().__init__(metric=metric, rank=rank)
 
     def egrad2rgrad(self, z: torch.Tensor, u: torch.Tensor) -> torch.Tensor:
@@ -93,9 +91,7 @@ class UpperHalf(SiegelManifold):
         y = sm.positive_conjugate_projection(z.imag)
         return sm.to_complex(z.real, y)
 
-    def inner(
-        self, z: torch.Tensor, u: torch.Tensor, v=None, *, keepdim=False
-    ) -> torch.Tensor:
+    def inner(self, z: torch.Tensor, u: torch.Tensor, v=None, *, keepdim=False) -> torch.Tensor:
         r"""
         Inner product for tangent vectors at point :math:`Z`.
 
@@ -126,11 +122,10 @@ class UpperHalf(SiegelManifold):
         inv_y = sm.inverse(z.imag).type_as(z)
 
         ret = lalg.trace(inv_y @ u @ inv_y @ v.conj())
-        
+
         # fixes by Wei
         if keepdim:
             return torch.unsqueeze(torch.unsqueeze(ret, -1), -1)
-
 
     def _check_point_on_manifold(self, z: torch.Tensor, *, atol=1e-5, rtol=1e-5):
         if not self._check_matrices_are_symmetric(z, atol=atol, rtol=rtol):
@@ -154,13 +149,7 @@ class UpperHalf(SiegelManifold):
         tens.imag = lalg.expm(tens.imag)
         return tens
 
-    def origin(
-        self,
-        *size: Union[int, Tuple[int]],
-        dtype=None,
-        device=None,
-        seed: Optional[int] = 42,
-    ) -> torch.Tensor:
+    def origin(self, *size: Union[int, Tuple[int]], dtype=None, device=None, seed: Optional[int] = 42) -> torch.Tensor:
         """
         Create points at the origin of the manifold in a deterministic way.
 

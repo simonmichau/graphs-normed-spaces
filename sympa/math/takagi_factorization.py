@@ -1,13 +1,14 @@
-
 import torch
 import sympa.math.symmetric_math as sm
 
 EPS = {torch.float32: 4e-3, torch.float64: 1e-5}
 
-DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')    
+DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 
 def assert_all_close(a, b, factor=1):
     return torch.all((a - b).abs() < EPS[torch.float32] * factor)
+
 
 def row_sort(x, indexes):
     """
@@ -23,6 +24,7 @@ def row_sort(x, indexes):
     ].view(d1, d2)
     return ret
 
+
 class TakagiFactorization:
     """
     Given a complex symmetric matrix A, the Takagi factorization is an algorithm that
@@ -32,6 +34,7 @@ class TakagiFactorization:
         Ŝ: S conjugate
         S^*: S conjugate transpose
     """
+
     def __init__(self, matrix_rank):
         self.rank = matrix_rank
         self.eigvalues_idx = torch.arange(start=0, end=2 * matrix_rank, step=2, dtype=torch.long, device=DEVICE)
@@ -54,18 +57,18 @@ class TakagiFactorization:
         :return: eigenvalues: b x n, eigenvectors: b x 2 x n x n
         """
         # z1, D
-        z1, eigenvalues, diagonal = self._get_z1(a)          # z1: b x 2 x n x n, evalues: b x n, diagonal: b x 2 x n x n
+        z1, eigenvalues, diagonal = self._get_z1(a)  # z1: b x 2 x n x n, evalues: b x n, diagonal: b x 2 x n x n
         # diagonal = sm.pow(diagonal, 0.5)
-        eigenvalues = eigenvalues**0.5
+        eigenvalues = eigenvalues ** 0.5
 
-        z2, b = self._get_z2(a, z1)                          # z2, b: b x 2 x n x n
+        z2, b = self._get_z2(a, z1)  # z2, b: b x 2 x n x n
 
         # assert that d_i = |b_i|
         # assert assert_all_close(sm.sym_abs(diagonal), sm.sym_abs(b))
 
         z3 = self._get_z3(b)
 
-        s = sm.bmm3(sm.conj_trans(z1), z2, z3)             # S = Z1^* Z2 Z3
+        s = sm.bmm3(sm.conj_trans(z1), z2, z3)  # S = Z1^* Z2 Z3
 
         # assert self.s_transpose_a_s_equals_diag(s, a, diagonal)
 
@@ -87,9 +90,9 @@ class TakagiFactorization:
         """
         a_star = sm.conj_trans(a)
         a_star_a = sm.bmm(a_star, a)
-        a_star_a_2n = sm.to_compound_real_symmetric_from_hermitian(a_star_a)        # b x 2n x 2n
+        a_star_a_2n = sm.to_compound_real_symmetric_from_hermitian(a_star_a)  # b x 2n x 2n
 
-        eigenvalues, eigenvectors = sm.symeig(a_star_a_2n)              # b x 2n; b x 2n x 2n
+        eigenvalues, eigenvectors = sm.symeig(a_star_a_2n)  # b x 2n; b x 2n x 2n
 
         eigenvalues, desc_indices = torch.sort(eigenvalues, dim=-1, descending=True)
 
@@ -122,14 +125,15 @@ class TakagiFactorization:
         """
         result = []
         half_elem = int(eigenvectors.size(-1) / 2)
-        for mat_idx, matrix in enumerate(eigenvectors):     # 2n x 2n. Each matrix can have a different rearrangement
-            matrix = matrix.index_select(dim=1, index=desc_indices[mat_idx])    # reorders to descending, as eigvalues
-            vecs = matrix.split(1, dim=-1)                  # list of 2n eigenvectors with vecs of 2n x 1
+        for mat_idx, matrix in enumerate(eigenvectors):  # 2n x 2n. Each matrix can have a different rearrangement
+            matrix = matrix.index_select(dim=1, index=desc_indices[mat_idx])  # reorders to descending, as eigvalues
+            vecs = matrix.split(1, dim=-1)  # list of 2n eigenvectors with vecs of 2n x 1
             left, right = [], []
             for i in range(0, len(vecs), 2):
                 elem_a = vecs[i][0]
                 elem_b = vecs[i + 1][half_elem]
-                if assert_all_close(elem_a, elem_b, factor=5) and ((elem_a > 0 and elem_b > 0) or (elem_a < 0 and elem_b < 0)):
+                if assert_all_close(elem_a, elem_b, factor=5) and (
+                        (elem_a > 0 and elem_b > 0) or (elem_a < 0 and elem_b < 0)):
                     left.append(vecs[i])
                     right.append(vecs[i + 1])
                 elif assert_all_close(elem_a, elem_b * -1, factor=5):  # in this case, it swaps the eigenvectors
@@ -140,7 +144,7 @@ class TakagiFactorization:
                                      f"Matrix: {matrix}")
 
             left.extend(right)
-            reordered = torch.cat(left, dim=-1)             # 2n x 2n
+            reordered = torch.cat(left, dim=-1)  # 2n x 2n
             result.append(reordered)
 
         result = torch.stack(result, dim=0)
@@ -160,23 +164,23 @@ class TakagiFactorization:
         :return: z2: b x 2 x n x n, b: b x 2 x n x n
         """
         # build W
-        w = sm.bmm3(sm.conjugate(z1), a, sm.conj_trans(z1))                                    # b x 2 x n x n
+        w = sm.bmm3(sm.conjugate(z1), a, sm.conj_trans(z1))  # b x 2 x n x n
 
-        real_w = sm.real(w)                                                     # b x n x n
+        real_w = sm.real(w)  # b x n x n
         # assert assert_all_close(real_w, real_w.transpose(-1, -2)), f"Real_W: {real_w}"  # assert Re(W) is symmetric
         # INSTEAD: impose symmetry on real_w
         real_w = sm.squared_to_symmetric(real_w)
 
         # diagonalize Re(W)
-#        real_b, real_z2 = torch.symeig(real_w, eigenvectors=True)               # real_b: b x n, z2: b x n x n
-        real_b, real_z2  = torch.linalg.eigh(real_w, "U")
+        #        real_b, real_z2 = torch.symeig(real_w, eigenvectors=True)               # real_b: b x n, z2: b x n x n
+        real_b, real_z2 = torch.linalg.eigh(real_w, "U")
 
         # assert that real_z2 is orthogonal: it checks only on the first and last pairs of tensors for simplicity
         assert torch.allclose(torch.sum(real_z2[:, :, 0] * real_z2[:, :, 1]), self.zero)
         assert torch.allclose(torch.sum(real_z2[:, :, -2] * real_z2[:, :, -1]), self.zero)
 
         # build Im(B) = Z2^T Im(W) Z2
-        imag_b = real_z2.transpose(-1, -2).bmm(sm.imag(w)).bmm(real_z2)     # b x n x n
+        imag_b = real_z2.transpose(-1, -2).bmm(sm.imag(w)).bmm(real_z2)  # b x n x n
 
         # assert that imag_b is diagonal
         # assert torch.allclose(imag_b.norm(), torch.diagonal(imag_b, dim1=-2, dim2=-1).norm())
@@ -184,7 +188,7 @@ class TakagiFactorization:
         imag_b = torch.diag_embed(torch.diagonal(imag_b, dim1=-2, dim2=-1))
 
         # reorder |B_i|^2 in descending order
-        sorted_b, indexes = self.set_descending_order_bi_sq(torch.diag_embed(real_b), imag_b)   # b x 2 x n x n; b x n
+        sorted_b, indexes = self.set_descending_order_bi_sq(torch.diag_embed(real_b), imag_b)  # b x 2 x n x n; b x n
 
         # reorder z2 according to indices taken from B reordering
         sorted_real_z2 = self.reorder_z2(real_z2, indexes)
@@ -213,8 +217,8 @@ class TakagiFactorization:
         :return: sorted B and indices of reordering
         """
         b = sm.stick(real_b, imag_b)
-        sq_mod_b = torch.pow(sm.sym_abs(b), 2)                                          # b x n x n
-        diag_sq_mod_b = torch.diagonal(sq_mod_b, offset=0, dim1=-2, dim2=-1)            # b x n
+        sq_mod_b = torch.pow(sm.sym_abs(b), 2)  # b x n x n
+        diag_sq_mod_b = torch.diagonal(sq_mod_b, offset=0, dim1=-2, dim2=-1)  # b x n
         _, indexes = torch.sort(diag_sq_mod_b, dim=-1, descending=True)
 
         diag_real_b = torch.diagonal(real_b, offset=0, dim1=-2, dim2=-1)
@@ -238,7 +242,7 @@ class TakagiFactorization:
         diagonal_mask = sm.stick(diagonal_mask, diagonal_mask)
         b_no_zeros = torch.where(diagonal_mask > 0.5, b, torch.ones_like(b))
 
-        mod_b = sm.sym_abs(b_no_zeros)                                # b x n x n
+        mod_b = sm.sym_abs(b_no_zeros)  # b x n x n
         compound_mod_b = sm.stick(mod_b, mod_b)
 
         z3 = b_no_zeros / compound_mod_b
@@ -246,7 +250,7 @@ class TakagiFactorization:
         z3 = sm.pow(z3, -1)
 
         # builds final z3 using only values from the diagonal
-        z3 = torch.diag_embed(torch.diagonal(z3, offset=0, dim1=-2, dim2=-1))       # b x 2 x n x n
+        z3 = torch.diag_embed(torch.diagonal(z3, offset=0, dim1=-2, dim2=-1))  # b x 2 x n x n
 
         # asserts Z3 B Z3 is real
         z3_b_z3 = sm.bmm3(z3, b, z3)
@@ -264,5 +268,5 @@ class TakagiFactorization:
         ok = assert_all_close(s_transpose_a_s, diagonal)
         if not ok:
             print(f"s_transpose_a_s:{s_transpose_a_s}\n\ndiagonal:{diagonal}\n\n"
-                     f"diff: {(s_transpose_a_s - diagonal).abs()}")
+                  f"diff: {(s_transpose_a_s - diagonal).abs()}")
         return ok
